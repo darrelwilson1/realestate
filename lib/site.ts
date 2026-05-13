@@ -8,7 +8,7 @@ export const site = {
   tagline: "Las Vegas luxury homes, sold with discretion.",
   description:
     "Boutique luxury real estate in Las Vegas. Darrel's Real Estate represents buyers and sellers in The Ridges, MacDonald Highlands, Ascaya, Lake Las Vegas, and the Vegas valley's premier guard-gated communities.",
-  url: "https://darrelsrealestate.com",
+  url: "https://wilsonaiwebsite.com",
   ogImage: "/og.png",
   locale: "en_US",
   // NAP — used in Footer, Contact page, and LocalBusiness JSON-LD.
