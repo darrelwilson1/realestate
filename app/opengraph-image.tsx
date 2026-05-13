@@ -21,7 +21,7 @@ export default function OG() {
           justifyContent: "space-between",
           padding: "72px",
           background:
-            "radial-gradient(ellipse 70% 50% at 50% 30%, rgba(0,229,255,0.25), transparent 70%), #0a0a0b",
+            "radial-gradient(ellipse 70% 50% at 50% 30%, rgba(255,214,10,0.3), transparent 70%), #0a0a0b",
           color: "#f5f5f4",
           fontFamily: "sans-serif",
         }}
@@ -32,8 +32,8 @@ export default function OG() {
               width: 14,
               height: 14,
               borderRadius: 999,
-              background: "#00e5ff",
-              boxShadow: "0 0 30px #00e5ff",
+              background: "#ffd60a",
+              boxShadow: "0 0 30px #ffd60a",
             }}
           />
           <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: -0.5 }}>

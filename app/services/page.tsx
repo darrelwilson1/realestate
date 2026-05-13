@@ -51,7 +51,7 @@ export default function ServicesPage() {
       <section className="pb-24 sm:pb-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn>
-            <div className="rounded-3xl border border-border bg-gradient-to-br from-card via-card to-[#001f25] p-10 sm:p-16">
+            <div className="rounded-3xl border border-border bg-gradient-to-br from-card via-card to-[#1a1500] p-10 sm:p-16">
               <div className="max-w-3xl">
                 <h2 className="text-balance font-display text-4xl font-medium tracking-tight sm:text-5xl">
                   Not sure which service fits?

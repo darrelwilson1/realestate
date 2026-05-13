@@ -51,7 +51,7 @@
 }
 
 /*
-  Dark-first palette: deep charcoal background, off-white text, electric blue accent.
+  Dark-first palette: deep charcoal background, off-white text, neon-yellow accent.
   "Light" sections on marketing pages opt in via .section-light utility below.
 */
 :root {
@@ -61,7 +61,7 @@
   --card-foreground: #f5f5f4;
   --popover: #131316;
   --popover-foreground: #f5f5f4;
-  --primary: #00e5ff;
+  --primary: #ffd60a;
   --primary-foreground: #0a0a0b;
   --secondary: #1f1f23;
   --secondary-foreground: #f5f5f4;
@@ -72,22 +72,22 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: rgb(255 255 255 / 0.08);
   --input: rgb(255 255 255 / 0.12);
-  --ring: #00e5ff;
-  --chart-1: #00e5ff;
-  --chart-2: #4dd0e1;
-  --chart-3: #80deea;
-  --chart-4: #26c6da;
-  --chart-5: #006064;
+  --ring: #ffd60a;
+  --chart-1: #ffd60a;
+  --chart-2: #ffe066;
+  --chart-3: #ffeb99;
+  --chart-4: #c99800;
+  --chart-5: #806000;
   --radius: 0.75rem;
   --sidebar: #131316;
   --sidebar-foreground: #f5f5f4;
-  --sidebar-primary: #00e5ff;
+  --sidebar-primary: #ffd60a;
   --sidebar-primary-foreground: #0a0a0b;
   --sidebar-accent: #1f1f23;
   --sidebar-accent-foreground: #f5f5f4;
   --sidebar-border: rgb(255 255 255 / 0.08);
-  --sidebar-ring: #00e5ff;
-  --brand: #00e5ff;
+  --sidebar-ring: #ffd60a;
+  --brand: #ffd60a;
   --brand-foreground: #0a0a0b;
 }
 
@@ -147,7 +147,7 @@
   .glow-radial {
     background: radial-gradient(
       ellipse 60% 50% at 50% 40%,
-      rgb(0 229 255 / 0.18),
+      rgb(255 214 10 / 0.22),
       transparent 70%
     );
   }

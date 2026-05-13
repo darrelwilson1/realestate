@@ -18,7 +18,7 @@ export function ServiceCard({ service, className, detailed }: ServiceCardProps) 
       className={cn(
         // Hover lifts the card, brightens the border, glows the icon.
         "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card/40 p-7 backdrop-blur transition-all duration-300",
-        "hover:-translate-y-1 hover:border-brand/50 hover:bg-card/60 hover:shadow-[0_0_60px_-15px_rgb(0_229_255_/_0.3)]",
+        "hover:-translate-y-1 hover:border-brand/50 hover:bg-card/60 hover:shadow-[0_0_60px_-15px_rgb(255_214_10_/_0.35)]",
         className,
       )}
     >

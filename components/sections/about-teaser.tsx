@@ -35,7 +35,7 @@ export function AboutTeaser() {
           </FadeIn>
 
           <FadeIn delay={0.15}>
-            <p className="text-sm font-semibold uppercase tracking-wider text-cyan-600">
+            <p className="text-sm font-semibold uppercase tracking-wider text-amber-600">
               About
             </p>
             <h2 className="mt-3 text-balance font-display text-4xl font-medium tracking-tight sm:text-5xl">

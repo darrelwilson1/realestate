@@ -47,7 +47,7 @@ export function Hero() {
               className="mr-[0.25em] inline-block"
             >
               {word === "discretion." ? (
-                <span className="bg-gradient-to-r from-brand to-cyan-200 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-brand to-amber-100 bg-clip-text text-transparent">
                   {word}
                 </span>
               ) : (
