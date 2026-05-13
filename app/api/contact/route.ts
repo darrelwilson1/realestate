@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { contactSchema } from "@/lib/validation";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-// Force Node runtime — needed if/when we wire to an SMTP / Resend / SendGrid SDK.
+// Force Node runtime — Supabase + JS networking is fully supported on Node.
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
@@ -33,15 +34,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  // TODO: replace this stub with a real transactional email send.
-  //   const resend = new Resend(process.env.RESEND_API_KEY);
-  //   await resend.emails.send({
-  //     from: "leads@darrelsrealestate.com",
-  //     to: "darrel@darrelsrealestate.com",
-  //     subject: `New inquiry from ${payload.name}`,
-  //     text: JSON.stringify(payload, null, 2),
-  //   });
-  console.log("[contact-form]", payload);
+  const supabase = await createServerSupabase();
+  const userAgent = request.headers.get("user-agent") ?? null;
+
+  const { error } = await supabase.from("contact_submissions").insert({
+    name: payload.name,
+    email: payload.email,
+    phone: payload.phone || null,
+    interest: payload.interest,
+    message: payload.message,
+    user_agent: userAgent,
+  });
+
+  if (error) {
+    console.error("[contact-form] insert failed", error);
+    return NextResponse.json(
+      { error: "Could not save your message. Please try again." },
+      { status: 500 },
+    );
+  }
+
+  // TODO: also fire a notification email to Darrel (Resend/SendGrid) so leads
+  // don't sit unseen until he checks the dashboard.
 
   return NextResponse.json({ ok: true });
 }

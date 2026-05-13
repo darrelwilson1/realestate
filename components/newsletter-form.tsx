@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { ArrowRight, Loader2 } from "lucide-react";
 
 /**
- * Footer newsletter capture. Stub submission — wire to ConvertKit / Mailchimp / your ESP.
+ * Footer newsletter capture. POSTs to /api/newsletter which inserts into Supabase.
  */
 export function NewsletterForm() {
   const [email, setEmail] = useState("");
@@ -22,11 +22,23 @@ export function NewsletterForm() {
       return;
     }
     setPending(true);
-    // Replace with real ESP call. The fake delay keeps the UX honest while stubbed.
-    await new Promise((r) => setTimeout(r, 700));
-    setPending(false);
-    setEmail("");
-    toast.success("You're on the list.");
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: parsed.data.email }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Subscription failed");
+      }
+      setEmail("");
+      toast.success("You're on the list.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Subscription failed");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
