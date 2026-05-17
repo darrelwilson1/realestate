@@ -3,10 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Bath, BedDouble, Ruler } from "lucide-react";
 import { FadeIn, Stagger, FadeInChild } from "@/components/motion/fade-in";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { getDb } from "@/lib/mongodb";
+import type { ListingDoc } from "@/lib/types";
 import { formatPriceCents } from "@/lib/format";
 
-// Revalidate every 60s — listings change frequently enough that ISR is the right balance.
+// Revalidate every 60s — listings change often enough that ISR is the right balance.
 export const revalidate = 60;
 
 export const metadata: Metadata = {
@@ -16,21 +17,52 @@ export const metadata: Metadata = {
   alternates: { canonical: "/listings" },
 };
 
-export default async function ListingsPage() {
-  const supabase = await createServerSupabase();
-  const { data: listings, error } = await supabase
-    .from("listings")
-    .select(
-      "slug, title, price_cents, neighborhood, beds, baths, sqft, hero_image, is_featured, status",
-    )
-    .eq("status", "active")
-    .order("is_featured", { ascending: false })
-    .order("listed_at", { ascending: false });
+// Projection — only the fields the index card needs.
+type ListingCard = Pick<
+  ListingDoc,
+  | "slug"
+  | "title"
+  | "price_cents"
+  | "neighborhood"
+  | "beds"
+  | "baths"
+  | "sqft"
+  | "hero_image"
+  | "is_featured"
+>;
 
-  // Surface DB issues during dev; in prod we render an empty state.
-  if (error) {
-    console.error("[/listings] failed to fetch", error);
+async function fetchActiveListings(): Promise<ListingCard[]> {
+  try {
+    const db = await getDb();
+    return await db
+      .collection<ListingDoc>("listings")
+      .find(
+        { status: "active" },
+        {
+          projection: {
+            _id: 0,
+            slug: 1,
+            title: 1,
+            price_cents: 1,
+            neighborhood: 1,
+            beds: 1,
+            baths: 1,
+            sqft: 1,
+            hero_image: 1,
+            is_featured: 1,
+          },
+          sort: { is_featured: -1, listed_at: -1 },
+        },
+      )
+      .toArray();
+  } catch (err) {
+    console.error("[/listings] failed to fetch", err);
+    return [];
   }
+}
+
+export default async function ListingsPage() {
+  const listings = await fetchActiveListings();
 
   return (
     <>
@@ -55,7 +87,7 @@ export default async function ListingsPage() {
 
       <section className="pb-24 sm:pb-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {!listings || listings.length === 0 ? (
+          {listings.length === 0 ? (
             <FadeIn>
               <div className="rounded-2xl border border-border bg-card/40 p-10 text-center backdrop-blur">
                 <p className="text-muted-foreground">

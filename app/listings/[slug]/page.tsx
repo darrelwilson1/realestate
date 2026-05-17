@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { getDb } from "@/lib/mongodb";
+import type { ListingDoc } from "@/lib/types";
 import { formatPriceCentsFull } from "@/lib/format";
 import { site } from "@/lib/site";
 
@@ -21,30 +22,35 @@ export const revalidate = 60;
 
 type Params = { slug: string };
 
+async function fetchListing(slug: string): Promise<ListingDoc | null> {
+  try {
+    const db = await getDb();
+    return await db
+      .collection<ListingDoc>("listings")
+      .findOne({ slug, status: "active" });
+  } catch (err) {
+    console.error("[/listings/[slug]] fetch error", err);
+    return null;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createServerSupabase();
-  const { data } = await supabase
-    .from("listings")
-    .select("title, description, hero_image, neighborhood")
-    .eq("slug", slug)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (!data) return {};
+  const doc = await fetchListing(slug);
+  if (!doc) return {};
   return {
-    title: data.title,
-    description: data.description.slice(0, 160),
+    title: doc.title,
+    description: doc.description.slice(0, 160),
     alternates: { canonical: `/listings/${slug}` },
     openGraph: {
-      title: `${data.title} — ${data.neighborhood}`,
-      description: data.description.slice(0, 200),
+      title: `${doc.title} — ${doc.neighborhood}`,
+      description: doc.description.slice(0, 200),
       url: `${site.url}/listings/${slug}`,
-      images: data.hero_image ? [data.hero_image] : undefined,
+      images: doc.hero_image ? [doc.hero_image] : undefined,
     },
   };
 }
@@ -55,24 +61,14 @@ export default async function ListingDetailPage({
   params: Promise<Params>;
 }) {
   const { slug } = await params;
-  const supabase = await createServerSupabase();
-  const { data: listing, error } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("slug", slug)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (error) console.error("[/listings/[slug]] fetch error", error);
+  const listing = await fetchListing(slug);
   if (!listing) notFound();
 
-  // images is jsonb — narrow to string[].
-  const images = Array.isArray(listing.images)
-    ? (listing.images as unknown as string[])
-    : [];
+  // Build the gallery: hero image first, then any other images de-duplicated.
+  const extras = (listing.images ?? []).filter((i) => i !== listing.hero_image);
   const allImages = listing.hero_image
-    ? [listing.hero_image, ...images.filter((i) => i !== listing.hero_image)]
-    : images;
+    ? [listing.hero_image, ...extras]
+    : extras;
 
   return (
     <article>
@@ -127,7 +123,11 @@ export default async function ListingDetailPage({
                     src={src}
                     alt={`${listing.title} — view ${i + 1}`}
                     fill
-                    sizes={i === 0 ? "(max-width: 1024px) 100vw, 75vw" : "(max-width: 1024px) 50vw, 25vw"}
+                    sizes={
+                      i === 0
+                        ? "(max-width: 1024px) 100vw, 75vw"
+                        : "(max-width: 1024px) 50vw, 25vw"
+                    }
                     className="object-cover"
                     priority={i === 0}
                   />

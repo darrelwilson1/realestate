@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { MongoServerError } from "mongodb";
 import { newsletterSchema } from "@/lib/validation";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { getDb } from "@/lib/mongodb";
+import type { NewsletterSubscriberDoc } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -20,15 +22,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await createServerSupabase();
-  const { error } = await supabase
-    .from("newsletter_subscribers")
-    .insert({ email: parsed.data.email, source: "footer" });
-
-  // Postgres unique-violation code = 23505. Treat dupes as success so users
-  // who signed up twice don't get an error.
-  if (error && error.code !== "23505") {
-    console.error("[newsletter] insert failed", error);
+  try {
+    const db = await getDb();
+    await db.collection<Omit<NewsletterSubscriberDoc, "_id">>("newsletter_subscribers").insertOne({
+      email: parsed.data.email,
+      confirmed: false,
+      source: "footer",
+      created_at: new Date(),
+    });
+  } catch (err) {
+    // MongoDB duplicate-key error = code 11000. Treat as success so users who
+    // signed up twice don't get an error.
+    if (err instanceof MongoServerError && err.code === 11000) {
+      return NextResponse.json({ ok: true });
+    }
+    console.error("[newsletter] insert failed", err);
     return NextResponse.json(
       { error: "Could not save. Please try again." },
       { status: 500 },
