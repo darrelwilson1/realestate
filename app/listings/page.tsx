@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Bath, BedDouble, Ruler } from "lucide-react";
 import { FadeIn, Stagger, FadeInChild } from "@/components/motion/fade-in";
-import { getDb } from "@/lib/mongodb";
-import type { ListingDoc } from "@/lib/types";
+import { createClient } from "@/lib/supabase/server";
+import type { ListingRow } from "@/lib/types";
 import { formatPriceCents } from "@/lib/format";
 
 // Revalidate every 60s — listings change often enough that ISR is the right balance.
@@ -17,9 +17,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/listings" },
 };
 
-// Projection — only the fields the index card needs.
 type ListingCard = Pick<
-  ListingDoc,
+  ListingRow,
   | "slug"
   | "title"
   | "price_cents"
@@ -32,33 +31,21 @@ type ListingCard = Pick<
 >;
 
 async function fetchActiveListings(): Promise<ListingCard[]> {
-  try {
-    const db = await getDb();
-    return await db
-      .collection<ListingDoc>("listings")
-      .find(
-        { status: "active" },
-        {
-          projection: {
-            _id: 0,
-            slug: 1,
-            title: 1,
-            price_cents: 1,
-            neighborhood: 1,
-            beds: 1,
-            baths: 1,
-            sqft: 1,
-            hero_image: 1,
-            is_featured: 1,
-          },
-          sort: { is_featured: -1, listed_at: -1 },
-        },
-      )
-      .toArray();
-  } catch (err) {
-    console.error("[/listings] failed to fetch", err);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("listings")
+    .select(
+      "slug, title, price_cents, neighborhood, beds, baths, sqft, hero_image, is_featured",
+    )
+    .eq("status", "active")
+    .order("is_featured", { ascending: false })
+    .order("listed_at", { ascending: false });
+
+  if (error) {
+    console.error("[/listings] failed to fetch", error);
     return [];
   }
+  return data ?? [];
 }
 
 export default async function ListingsPage() {

@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
-import { getDb } from "@/lib/mongodb";
-import type { ListingDoc } from "@/lib/types";
+import { createClient } from "@/lib/supabase/server";
+import type { ListingRow } from "@/lib/types";
 import { formatPriceCentsFull } from "@/lib/format";
 import { site } from "@/lib/site";
 
@@ -22,16 +22,20 @@ export const revalidate = 60;
 
 type Params = { slug: string };
 
-async function fetchListing(slug: string): Promise<ListingDoc | null> {
-  try {
-    const db = await getDb();
-    return await db
-      .collection<ListingDoc>("listings")
-      .findOne({ slug, status: "active" });
-  } catch (err) {
-    console.error("[/listings/[slug]] fetch error", err);
+async function fetchListing(slug: string): Promise<ListingRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("listings")
+    .select("*")
+    .eq("slug", slug)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[/listings/[slug]] fetch error", error);
     return null;
   }
+  return data;
 }
 
 export async function generateMetadata({

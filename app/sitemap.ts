@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/lib/site";
 import { getAllSlugs } from "@/lib/blog";
-import { getDb } from "@/lib/mongodb";
-import type { ListingDoc } from "@/lib/types";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [blogSlugs, listingSlugs] = await Promise.all([
@@ -40,14 +39,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 async function fetchActiveListingSlugs(): Promise<string[]> {
   try {
-    const db = await getDb();
-    const docs = await db
-      .collection<ListingDoc>("listings")
-      .find({ status: "active" }, { projection: { slug: 1, _id: 0 } })
-      .toArray();
-    return docs.map((d) => d.slug);
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("listings")
+      .select("slug")
+      .eq("status", "active");
+    if (error) throw error;
+    return (data ?? []).map((d) => d.slug);
   } catch {
-    // Build can still run if MONGODB_URI is missing — empty list is the safe fallback.
+    // Build can still run if Supabase env is missing — empty list is the safe fallback.
     return [];
   }
 }

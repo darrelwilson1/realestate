@@ -1,32 +1,29 @@
 /* eslint-disable */
 /**
- * One-shot seed for the `darrels` MongoDB database.
+ * One-shot seed for the `listings` table in Supabase.
  *
- * - Creates indexes on listings (slug unique, status+listed_at, is_featured)
- *   and on newsletter_subscribers (email unique).
- * - Upserts 6 sample luxury listings keyed by slug, so re-running converges.
+ * Upserts 6 sample luxury listings keyed by slug, so re-running converges.
+ *
+ * Requires SUPABASE_SERVICE_ROLE_KEY in .env.local — the publishable key cannot
+ * bypass RLS, and inserting public listings without going through an admin role
+ * is what the service role is for. Get it from:
+ *   Supabase dashboard → Project Settings → API → service_role secret.
  *
  * Run with:  npm run seed
  *   (which expands to:  node --env-file=.env.local scripts/seed.mjs )
  */
 
-import { MongoClient } from "mongodb";
-import dns from "node:dns";
+import { createClient } from "@supabase/supabase-js";
 
-// Some Windows machines have Node's c-ares DNS resolver pointed at 127.0.0.1
-// which breaks the SRV lookup needed by mongodb+srv:// URIs. Force public resolvers.
-const servers = dns.getServers();
-if (servers.length === 0 || servers.every((s) => s === "127.0.0.1" || s === "::1")) {
-  dns.setServers(["1.1.1.1", "8.8.8.8"]);
-}
-
-const uri = process.env.MONGODB_URI;
-if (!uri) {
-  console.error("MONGODB_URI is not set. Did you forget --env-file=.env.local?");
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!url || !serviceKey) {
+  console.error(
+    "Missing env vars. Need NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.\n" +
+      "Add SUPABASE_SERVICE_ROLE_KEY to .env.local — it bypasses RLS for the seed.",
+  );
   process.exit(1);
 }
-
-const now = new Date();
 
 const listings = [
   {
@@ -215,51 +212,21 @@ const listings = [
   },
 ];
 
-const client = new MongoClient(uri);
+const supabase = createClient(url, serviceKey, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
-try {
-  await client.connect();
-  const db = client.db();
-  console.log(`Connected to MongoDB. Using database: ${db.databaseName}`);
+const now = new Date().toISOString();
+const rows = listings.map((l) => ({ ...l, listed_at: now }));
 
-  // --- indexes ---
-  console.log("Creating indexes...");
-  await db.collection("listings").createIndex({ slug: 1 }, { unique: true });
-  await db
-    .collection("listings")
-    .createIndex({ status: 1, listed_at: -1 }, { name: "status_listed_at" });
-  await db
-    .collection("listings")
-    .createIndex({ is_featured: 1 }, { partialFilterExpression: { is_featured: true } });
-  await db
-    .collection("newsletter_subscribers")
-    .createIndex({ email: 1 }, { unique: true });
-  await db
-    .collection("contact_submissions")
-    .createIndex({ created_at: -1 });
+console.log(`Upserting ${rows.length} listings (keyed on slug)...`);
+const { data, error } = await supabase
+  .from("listings")
+  .upsert(rows, { onConflict: "slug" })
+  .select("slug");
 
-  // --- upsert listings ---
-  console.log(`Upserting ${listings.length} listings...`);
-  const bulk = listings.map((l) => ({
-    updateOne: {
-      filter: { slug: l.slug },
-      update: {
-        $set: { ...l, listed_at: now, updated_at: now },
-        $setOnInsert: { created_at: now },
-      },
-      upsert: true,
-    },
-  }));
-  const result = await db.collection("listings").bulkWrite(bulk);
-  console.log(
-    `  inserted=${result.upsertedCount}, modified=${result.modifiedCount}, matched=${result.matchedCount}`,
-  );
-
-  const total = await db.collection("listings").countDocuments();
-  console.log(`Done. Listings in DB: ${total}`);
-} catch (err) {
-  console.error("Seed failed:", err);
+if (error) {
+  console.error("Seed failed:", error);
   process.exit(1);
-} finally {
-  await client.close();
 }
+console.log(`Upserted ${data?.length ?? 0} rows.`);
