@@ -34,6 +34,10 @@ yarn-error.log*
 .env*
 # ...but keep the template so contributors know which vars to set.
 !.env.example
+# Production env is checked in — only contains NEXT_PUBLIC_* keys that ship to
+# the browser anyway and are gated by Supabase RLS policies. Never put a
+# service-role key or other secret in here.
+!.env.production
 
 # vercel
 .vercel
